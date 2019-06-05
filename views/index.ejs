@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>留言本</title>
+    <link rel="stylesheet" href="css/bootstrap.css">
+
+    <style>
+        form,
+        nav,
+        ul,
+        .set,
+        .data {
+            margin: 20px;
+        }
+
+        .set {
+            display: none
+        }
+        .time{
+            font-size: 12px;
+            margin-left: 20px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class='container'>
+        <h1 class="text-center">留言本</h1>
+    </div>
+    <form>
+        <div class='form-group'>
+            <label>姓名：</label>
+            <input type="text" class="form-control" id='name' name="name">
+        </div>
+        <div class='form-group'>
+            <label>留言内容：</label>
+            <textarea type="text" class="form-control" id='message' name='message'></textarea>
+        </div>
+        <button type="button" class="btn btn-default" id="tijiao">提交</button>
+    </form>
+
+    <div class="alert alert-success set" role="alert" id='success'>操作成功</div>
+    <div class="alert alert-danger set" role="alert" id='err'>操作失败</div>
+
+    <h1>留言列表</h1>
+    <div class="list-group data" id='data'>
+       
+    </div>
+
+
+    <nav aria-label="Page navigation">
+        <ul class="pagination">
+            <% for(var i=1; i<= pagecount; i++) {%>
+                <li><a href="javascript:;"><%= i %></a></li>
+            <% } %>
+        </ul>
+    </nav>
+
+    <script src='js/jquery.min.js'></script>
+    <script src="js/bootstrap.js"> </script>
+    <script>
+
+        $(function () {
+
+            // 删除请求
+            $('#data').on("click", ".del", function(){
+                var id = $(this).data('id') // 获取唯一的id号 div中应该这样写data-id='' 就可以获取到id
+                console.log(id)
+                var then = $(this)
+                $.ajax({
+                    url: '/deleteData',
+                    dataType: 'json',
+                    data: {"id": id},
+                    success: function(data) {
+                        if(data.result == '-1'){
+                           alert('数据删除失败')
+                        } else if (data.result == '1') {
+                            then.parent().parent().remove() // 找到父元素删除
+                        }
+                    }
+                })
+            })
+           
+            $('.pagination>li').eq(0).addClass('active')
+
+            $('.pagination li').click(function(){
+                var page = $(this).text(); // 获取当前点击的页码
+                messageData(page)
+                $(this).siblings('li').removeClass('active');  // 删除其他兄弟元素的样式
+                $(this).addClass('active');      
+            
+            })
+            messageData(1)
+            function messageData(row) {
+                $.ajax({
+                    url: 'getData',
+                    dataType: 'json',
+                    type: 'get',
+                    data: { 'page': row },
+                    success: function (data) {
+                        $('.data').empty(); // 清空数据
+                        for (var i = 0; i < data.length; i++) {
+                            Elments(data[i].name, data[i].message, data[i].times, data[i]._id)
+                        }
+                    }
+                })
+            }
+
+
+            $('#tijiao').click(function () {
+                $.ajax({
+                    url: '/tijiao',
+                    dataType: "json",
+                    type: "post",
+                    data: {
+                        name: $('#name').val(),
+                        message: $('#message').val()
+                    },
+                    success: function (data) {
+                        if (data.result == '-1') {
+                            $('#err').show();
+                            showhide()
+                        } else if (data.result == '1') {
+                            $('#success').show();
+                            showhide();
+                            Elments($("#name").val(), $("#message").val(), new Date().toLocaleString(),data.id);
+                        }
+                    }
+                })
+            })
+        })
+
+        // 列表摸板
+        function Elments(name, liuyan,time,_id) {
+            // ctrl+alt+方向键下键
+            // fn+end 显示到代码最后面
+            var str = "";
+            str += '<div class="panel panel-default">';
+            str += '<div class="list-group-item">' + name + '<span class="time">' + time + '</span>';
+            str += '<button type="button" class="close del" data-id="'+ _id+'" aria-label="Close"><span aria-hidden="true">&times;</span></button>'
+            str += '</div>';
+            str += '<div class="list-group-item">';
+            str += liuyan;
+            str += '</div>';
+            str += '</div>';
+
+            $(".data").prepend(str);
+        }
+
+        // 调用隐藏提示
+        function showhide() {
+            setTimeout(function () {
+                $("#err").hide();
+                $("#success").hide();
+            }, 2000);
+        }
+
+    </script>
+
+
+</body>
+
+</html>
